@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { celsius, milliAmps, volts, flags16, decodeEsn, decodeDate, imbalance } from '../src/devices/decoders';
+import { celsius, milliAmps, volts, flags16, decodeEsn, decodeDate, decodeStateWord, imbalance } from '../src/devices/decoders';
 
 describe('decoders', () => {
   it('celsius from Kelvin*10 offset', () => {
@@ -45,5 +45,14 @@ describe('decoders', () => {
   it('decodeDate returns a placeholder when the date is unset', () => {
     const regs = new Uint16Array(0x20); // all zero
     expect(decodeDate(regs, 0x13, 'en-US')).toBe('-');
+  });
+
+  it('decodeStateWord maps register 2 state words', () => {
+    expect(decodeStateWord(0x0000)).toBe('Normal');
+    expect(decodeStateWord(0x0080)).toBe('OVP1 (cell over-voltage)');
+    expect(decodeStateWord(0x0020)).toBe('UVP1 (cell under-voltage)');
+    expect(decodeStateWord(0x0002)).toBe('Over-temperature fault');
+    expect(decodeStateWord(0xffff)).toBe('MOS Failure - OC latched, secondary fuse FIRED');
+    expect(decodeStateWord(0x1234)).toBe('0x1234'); // unknown -> hex
   });
 });

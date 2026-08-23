@@ -63,7 +63,9 @@ export class Session {
   private errCb?: (count: number) => void;
   private errorCount = 0;
   constructor(private device: Device, private transport: Transport) {
-    this.client = new ModbusRtuClient(transport, device.unitId);
+    // Shorter timeout / fewer retries than the default so a non-responding BMS
+    // is detected in a couple of seconds rather than ~15.
+    this.client = new ModbusRtuClient(transport, device.unitId, { timeoutMs: 1200, retries: 2 });
   }
   onRegs(cb: (regs: Uint16Array) => void): void { this.cb = cb; }
   onError(cb: (count: number) => void): void { this.errCb = cb; }

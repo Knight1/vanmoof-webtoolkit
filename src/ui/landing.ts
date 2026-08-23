@@ -5,7 +5,8 @@
 export function renderLanding(container: HTMLElement, supported: boolean): void {
   container.replaceChildren();
   const wrap = document.createElement('section');
-  wrap.className = 'landing';
+  // The unsupported screen is centered both horizontally and vertically.
+  wrap.className = supported ? 'landing' : 'landing landing-center';
 
   if (!supported) {
     renderUnsupported(wrap);
@@ -15,7 +16,46 @@ export function renderLanding(container: HTMLElement, supported: boolean): void 
   container.append(wrap);
 }
 
+/** Shown when the BMS stops answering reads, so stale/0 values are not left on screen. */
+export function renderNotResponding(container: HTMLElement, seconds: number): void {
+  container.replaceChildren();
+  const wrap = document.createElement('section');
+  wrap.className = 'landing landing-center';
+
+  const emoji = document.createElement('div');
+  emoji.className = 'landing-emoji';
+  emoji.textContent = '📡';
+
+  const h = document.createElement('h1');
+  h.textContent = 'BMS not responding';
+
+  const p = document.createElement('p');
+  p.textContent = `No reply from the battery after about ${seconds}s. Retrying...`;
+
+  const tipsTitle = document.createElement('h2');
+  tipsTitle.textContent = 'Troubleshooting';
+  const tips = document.createElement('ol');
+  tips.className = 'landing-steps';
+  for (const t of [
+    'Ground the TEST pin - the BMS sleeps and ignores Modbus until TEST is tied to GND.',
+    'Check RX/TX are crossed (adapter RX to battery TX, adapter TX to battery RX) and GND is shared.',
+    'Make sure the adapter is 3.3 V logic and the pack has voltage on the discharge port.',
+    'Confirm you picked the right serial adapter when connecting.',
+  ]) {
+    const li = document.createElement('li');
+    li.textContent = t;
+    tips.append(li);
+  }
+
+  wrap.append(emoji, h, p, tipsTitle, tips);
+  container.append(wrap);
+}
+
 function renderUnsupported(wrap: HTMLElement): void {
+  const emoji = document.createElement('div');
+  emoji.className = 'landing-emoji';
+  emoji.textContent = '😕';
+
   const h = document.createElement('h1');
   h.textContent = "This browser isn't supported";
 
@@ -39,7 +79,7 @@ function renderUnsupported(wrap: HTMLElement): void {
   note.className = 'landing-muted';
   note.textContent = 'On a computer - not a phone or tablet. Firefox and Safari can’t connect.';
 
-  wrap.append(h, p, lead, list, note);
+  wrap.append(emoji, h, p, lead, list, note);
 }
 
 function renderWelcome(wrap: HTMLElement): void {

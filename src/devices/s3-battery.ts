@@ -1,5 +1,14 @@
 import type { Device, Field } from './types';
-import { celsius, milliAmps, volts, flags16, decodeEsn, decodeDate, imbalance } from './decoders';
+import { celsius, milliAmps, volts, flags16, decodeEsn, decodeDate, decodeStateWord, imbalance } from './decoders';
+
+// Latest known firmware versions; anything lower is flagged as outdated.
+export const LATEST_SW = 0x0117;
+export const LATEST_BL = 0x0007;
+
+/** Format a version register as hex, tagging it when older than `latest`. */
+export function versionLabel(v: number, latest: number): string {
+  return '0x' + v.toString(16).padStart(4, '0') + (v < latest ? ' (outdated)' : '');
+}
 
 const FAULT = ['DOTP','DUTP','COTP','CUTP','DOCP1','DOCP2','COCP1','COCP2',
   'OVP1','OVP2','UVP1','UVP2','PDOCP','PDSCP','MOTP','SCP'];
@@ -33,13 +42,19 @@ const f = (addr: number, name: string, group: Field['group'],
 const reg = (regs: Uint16Array, a: number) => regs[a] ?? 0;
 
 const fields: Field[] = [
-  f(0x02, 'Fault status', 'Status', (r) => reg(r,0x02) === 0 ? 'OK' : flags16(reg(r,0x02), FAULT).map(faultName).join(', ')),
+  f(0x02, 'State', 'Status', (r) => decodeStateWord(reg(r,0x02))),
   f(0x28, 'Warnings', 'Status', (r) => { const w = flags16(reg(r,0x28), WARN); return w.length ? w.join(', ') : 'None'; }),
   f(0x07, 'Charging', 'Status', (r) => flags16(reg(r,0x07), ['','','','','','','','','','','','','','CHG_IN','Fault','CHG']).join(', ') || 'idle'),
   f(0x08, 'Discharging', 'Status', (r) => (reg(r,0x08) & 0x8000) ? 'on' : 'off'),
   f(0x00, 'Run state', 'Status', (r) => {
     const v = reg(r, 0x00);
+    // reg 0 is a hardcoded liveness constant (0x0100) whenever the AP firmware
+    // is answering; anything else means the AP is not the responder.
     return v === 0x0100 ? 'Running (AP)' : '0x' + v.toString(16).padStart(4, '0');
+  }),
+  f(0x01, 'AP signature', 'Status', (r) => {
+    const v = reg(r, 0x01);
+    return v === 0x0001 ? '0x0001 (alive)' : '0x' + v.toString(16).padStart(4, '0');
   }),
 
   f(0x04, 'Pack voltage', 'Voltages', (r) => String(volts(reg(r,0x04))), 'V'),
@@ -62,8 +77,8 @@ const fields: Field[] = [
   f(0x27, 'Discharge MOS temp', 'Temperatures', (r) => celsius(reg(r,0x27)).toFixed(1), '°C'),
 
   f(0x0a, 'Hardware version', 'Identity', (r) => '0x' + reg(r,0x0a).toString(16).padStart(4,'0')),
-  f(0x0b, 'Software version', 'Identity', (r) => '0x' + reg(r,0x0b).toString(16).padStart(4,'0')),
-  f(0x2c, 'Bootloader version', 'Identity', (r) => '0x' + reg(r,0x2c).toString(16).padStart(4,'0')),
+  f(0x0b, 'Software version', 'Identity', (r) => versionLabel(reg(r,0x0b), LATEST_SW)),
+  f(0x2c, 'Bootloader version', 'Identity', (r) => versionLabel(reg(r,0x2c), LATEST_BL)),
   f(0x0c, 'Serial number', 'Identity', (r) => decodeEsn(r, 0x0c)),
   f(0x13, 'Manufacture date', 'Identity', (r) => decodeDate(r, 0x13)),
 
@@ -77,7 +92,7 @@ export const s3Battery: Device = {
   serial: { baudRate: 9600, dataBits: 8, parity: 'none', stopBits: 1 },
   unitId: 170,
   reads: [{ addr: 0, qty: 92 }],
-  cells: { addr: 0x1b, count: 10, parallel: 4, minMv: 2500, maxMv: 4300, packLabel: '10S4P', layout: 'string', packVoltageAddr: 0x04 },
+  cells: { addr: 0x1b, count: 10, parallel: 4, minMv: 2500, maxMv: 4300, packLabel: '10S4P', layout: 'string', packVoltageAddr: 0x04, currentAddr: 0x06, socAddr: 0x05, stateAddr: 0x02 },
   fields,
   actions: [
     { id: 'discharge-on', name: 'Enable discharge', danger: 'medium', kind: 'modbus-write',

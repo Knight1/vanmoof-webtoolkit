@@ -10,8 +10,12 @@ export const BMS_SCENARIOS = [
   { id: 'faulty-cell', label: 'Faulty cell (undervoltage)' },
   { id: 'imbalanced', label: 'Imbalanced cells' },
   { id: 'overtemp', label: 'Over-temperature' },
+  { id: 'short-circuit', label: 'Short-circuit (over-current)' },
+  { id: 'fuse-fired', label: 'MOS Failure (fuse fired)' },
   { id: 'depleted', label: 'Depleted / low charge' },
   { id: 'overvoltage', label: 'Cell over-voltage' },
+  { id: 'asleep', label: 'Asleep (cells read 0 mV)' },
+  { id: 'outdated-fw', label: 'Outdated firmware' },
   { id: 'fw-crc-error', label: 'Firmware CRC error (test)' },
 ] as const;
 export type BmsScenario = typeof BMS_SCENARIOS[number]['id'];
@@ -115,15 +119,16 @@ function recomputeMinMax(r: Uint16Array): void {
 /** A realistic, fault-free S3 pack near full charge. */
 function buildHealthy(): Uint16Array {
   const r = new Uint16Array(0x100);
-  r[0x00] = 0x0100;                 // running (application mode)
-  r[0x02] = 0;                      // no faults
+  r[0x00] = 0x0100;                 // running (application mode) - constant
+  r[0x01] = 0x0001;                 // AP liveness signature - constant
+  r[0x02] = 0;                      // state word: Normal
   r[0x03] = 2731 + 180;             // battery 18.0 C
   r[0x04] = 42000;                  // pack 42.0 V
   r[0x05] = 96;                     // RSOC %
   r[0x06] = 0;                      // current (idle)
   r[0x08] = 0x8000;                 // discharging enabled
   r[0x0a] = 0x0003;                 // hardware version
-  r[0x0b] = 0x0107;                 // software version
+  r[0x0b] = 0x0117;                 // software version (latest)
   writeAscii(r, 0x0c, 'VM13147K220012'); // 14-char serial number
   r[0x13] = 22;                     // manufacture year 2022 (byte)
   r[0x14] = (3 << 8) | 15;          // March 15
@@ -134,7 +139,7 @@ function buildHealthy(): Uint16Array {
   for (let i = 0; i < 10; i++) r[0x1b + i] = 4200 + (i % 3); // ~4.20 V/cell
   r[0x25] = 2731 + 190; r[0x26] = 2731 + 195; r[0x27] = 2731 + 210; // temps
   r[0x28] = 0;                      // no warnings
-  r[0x2c] = 0x0004;                 // bootloader version
+  r[0x2c] = 0x0007;                 // bootloader version (latest)
   recomputeMinMax(r);
   return r;
 }
@@ -151,14 +156,14 @@ export function scenarioRegisters(id: BmsScenario): Uint16Array {
     case 'healthy':
       break;
     case 'shutdown': // protection tripped, output disabled, pack sagging
-      setFlags(r, 0x02, [10, 13]); // UVP1 + PDSCP
+      r[0x02] = 0x0020;            // state word: Power-On UVP1
       r[0x08] = 0;                 // discharge off
       r[0x04] = 31000; r[0x05] = 4; r[0x18] = 3; r[0x17] = 400;
       for (let i = 0; i < 10; i++) r[0x1b + i] = 3100 + (i % 3);
       break;
     case 'faulty-cell': // one series group collapsed
       r[0x1e] = 1850;              // S4 far below the rest
-      setFlags(r, 0x02, [10]);     // UVP1
+      r[0x02] = 0x0020;            // Power-On UVP1
       r[0x08] = 0;
       break;
     case 'imbalanced': // one group sags but all still in range
@@ -166,17 +171,35 @@ export function scenarioRegisters(id: BmsScenario): Uint16Array {
       break;
     case 'overtemp':
       r[0x03] = 2731 + 620; r[0x25] = 2731 + 610; r[0x26] = 2731 + 615; r[0x27] = 2731 + 720;
-      setFlags(r, 0x02, [14]);     // MOTP
+      r[0x02] = 0x0002;           // state word: over-temperature fault
       r[0x08] = 0;
+      break;
+    case 'short-circuit': // AFE short-circuit cutoff (~150 A)
+      r[0x06] = 0xc568;          // int16 -15000 -> -150000 mA = -150 A discharge
+      r[0x02] = 0x00c0;          // state word: MOS Failure - hard protection
+      r[0x08] = 0;               // FETs opened
+      break;
+    case 'fuse-fired': // secondary pyro fuse has blown - pack permanently open
+      r[0x02] = 0xffff;          // state word: MOS Failure, fuse fired
+      r[0x08] = 0;               // output dead
       break;
     case 'depleted': // very low charge across the pack
       for (let i = 0; i < 10; i++) r[0x1b + i] = 2650 + (i % 3);
       r[0x04] = 26500; r[0x05] = 2; r[0x18] = 1; r[0x17] = 300;
+      r[0x02] = 0x0010;            // Power-On UVP2
       setFlags(r, 0x28, [11]);     // SOC warning
       break;
     case 'overvoltage':
       r[0x1c] = 4380;              // S2 above the high threshold
-      setFlags(r, 0x02, [8]);      // OVP1
+      r[0x02] = 0x0080;            // Power-On OVP1
+      break;
+    case 'asleep': // BMS answers Modbus but the AFE is not sampling cells
+      for (let i = 0; i < 10; i++) r[0x1b + i] = 0;
+      r[0x04] = 0; r[0x06] = 0; // pack voltage + current read 0
+      break;
+    case 'outdated-fw': // older firmware to exercise the update warning
+      r[0x0b] = 0x0107;            // software version below latest
+      r[0x2c] = 0x0004;            // bootloader below latest
       break;
     case 'fw-crc-error':
       r[0x81] = 1;                 // firmware CRC check reports failure

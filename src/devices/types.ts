@@ -37,6 +37,9 @@ export interface CellPack {
   packLabel: string;         // e.g. "10S4P"
   layout?: 'string' | 'u';   // physical arrangement; default 'string'
   packVoltageAddr?: number;  // optional register holding pack voltage (mV)
+  currentAddr?: number;      // optional register holding pack current (int16 x10 mA)
+  socAddr?: number;          // optional register holding RSOC (%) for plausibility checks
+  stateAddr?: number;        // optional register holding the reg-2 state word
 }
 
 export interface Device {

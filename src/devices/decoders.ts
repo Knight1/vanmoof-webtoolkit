@@ -12,6 +12,41 @@ export function flags16(reg: number, names: string[]): string[] {
   return out;
 }
 
+// Register 2 is a one-hot "state word": the firmware maps its internal state
+// byte (g_bms_state) through report_arm_value (uart.c) to these values. 0x0000
+// means a normal running state (idle/charge/discharge all collapse to 0). Names
+// are from the decompiled protocol.md reg-2 table. The transform is lossy
+// (0/1/2/4/5/6 all read 0x0000) and values can collide with the state-3 composed
+// fault word, so treat this as a hint, not a precise fault decode.
+const STATE_WORDS: Record<number, string> = {
+  0x0000: 'Normal',
+  0x0080: 'OVP1 (cell over-voltage)',
+  0x0040: 'OVP2 (cell over-voltage)',
+  0x0020: 'UVP1 (cell under-voltage)',
+  0x0010: 'UVP2 (cell under-voltage)',
+  0x0200: 'OVP1 recovery latch',
+  0x0100: 'OVP2 recovery latch',
+  0x0800: 'Protection (bit 6)',
+  0x0400: 'Protection (bit 7)',
+  0x0008: 'Protection (OVP recovery)',
+  0x0004: 'Protection (OVP recovery)',
+  0x0001: 'Pending protection',
+  0x2000: 'Pack-1 over-voltage cutoff',
+  0x1000: 'Pack-2 over-voltage cutoff',
+  0x8000: 'Runtime OVP1 fault',
+  0x4000: 'Runtime OVP2 fault',
+  0x0002: 'Over-temperature fault',
+  0xffff: 'MOS Failure - OC latched, secondary fuse FIRED',
+  0x00c0: 'MOS Failure - hard protection',
+  0x0030: 'Recoverable protection',
+};
+
+/** Decode register 2 (the state word). Unknown values (e.g. a composed fault
+ *  word) fall back to hex. */
+export function decodeStateWord(reg: number): string {
+  return STATE_WORDS[reg & 0xffff] ?? '0x' + (reg & 0xffff).toString(16).padStart(4, '0');
+}
+
 export function decodeEsn(regs: Uint16Array, start: number): string {
   const bytes: number[] = [];
   for (let i = 0; i < 7; i++) {
