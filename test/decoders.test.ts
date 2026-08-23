@@ -44,6 +44,6 @@ describe('decoders', () => {
 
   it('decodeDate returns a placeholder when the date is unset', () => {
     const regs = new Uint16Array(0x20); // all zero
-    expect(decodeDate(regs, 0x13, 'en-US')).toBe('—');
+    expect(decodeDate(regs, 0x13, 'en-US')).toBe('-');
   });
 });

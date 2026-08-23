@@ -73,7 +73,7 @@ describe('ModbusRtuClient', () => {
   it('resolves quickly with ModbusExceptionError on a short exception frame instead of waiting the full timeout', async () => {
     const t = new ExceptionTransport();
     await t.open({ baudRate: 9600, dataBits: 8, parity: 'none', stopBits: 1 });
-    // Large timeout + several retries — if collect() waited for minLen bytes
+    // Large timeout + several retries - if collect() waited for minLen bytes
     // (which never arrive, since the exception frame is only 5 bytes), this
     // test would take retries * timeoutMs (i.e. many seconds) to fail.
     const client = new ModbusRtuClient(t, 170, { timeoutMs: 3000, retries: 5 });

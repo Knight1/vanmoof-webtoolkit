@@ -271,6 +271,81 @@ input:focus, select:focus {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
+/* Landing / empty state */
+.landing { max-width: 640px; margin: 3.5rem auto; text-align: center; padding: 0 1rem; }
+.landing h1 { font-size: 1.6rem; margin: 0 0 0.5rem; color: var(--text); }
+.landing h2 {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent-2);
+  margin: 1.8rem 0 0.7rem; text-align: center;
+}
+.landing p { color: var(--muted); margin: 0.4rem 0; }
+.landing-muted { font-size: 0.85rem; }
+.landing-steps {
+  display: inline-block; text-align: left; color: var(--text);
+  line-height: 1.9; margin: 0 auto; padding-left: 1.3rem; max-width: 460px;
+}
+.landing-browsers {
+  list-style: none; display: flex; gap: 0.6rem; flex-wrap: wrap;
+  justify-content: center; padding: 0; margin: 0.8rem 0;
+}
+.landing-browsers li {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 0.3rem 0.85rem; font-size: 0.85rem;
+  font-weight: 600; color: var(--text);
+}
+.landing-wiring {
+  display: inline-flex; flex-direction: column; gap: 0.4rem;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1rem 1.4rem; margin: 0 auto;
+}
+.landing-port {
+  display: inline-block;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin: 0.2rem auto 1rem;
+  color: var(--accent-2);
+  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+.wire-row { display: flex; gap: 0.6rem; align-items: center; justify-content: flex-start; }
+.wire-row .from { color: var(--text); font-weight: 600; min-width: 110px; text-align: right; }
+.wire-row .arrow { color: var(--accent-2); }
+.wire-row .to { color: var(--muted); }
+
+/* Firmware panel */
+.fw-warn {
+  color: var(--bad);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  max-width: 640px;
+  margin: 0 auto 0.8rem;
+}
+input[type="file"] { color: var(--muted); }
+.fw-bar {
+  height: 10px;
+  max-width: 640px;
+  margin: 0.7rem auto 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.fw-bar-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  transition: width 0.2s ease;
+}
+
 /* Danger-tiered expert action buttons */
 button[data-danger="high"] { background: linear-gradient(180deg, #fb7185, #ef4444); }
 button[data-danger="medium"] { background: linear-gradient(180deg, #fbbf24, #f59e0b); color: #1a1200; }

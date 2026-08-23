@@ -4,12 +4,17 @@ import { renderShell, Session } from './ui/shell';
 import { renderDashboard } from './ui/dashboard';
 import { renderRawConsole } from './ui/raw-console';
 import { renderActionsPanel } from './ui/actions-panel';
+import { renderFirmwarePanel } from './ui/firmware-panel';
+import { renderLanding } from './ui/landing';
 import { SimulatedBmsTransport, type BmsScenario } from './transport/simulated-bms';
 import { WebSerialTransport } from './transport/webserial';
 import type { Transport } from './transport/types';
 import type { DeviceContext } from './devices/types';
 
 const root = document.querySelector<HTMLDivElement>('#app')!;
+// Simulation UI (fake battery + fault scenarios) is dev/preview only -
+// enable it by adding ?sim to the URL. Normal users only see hardware connect.
+const showSimulation = new URLSearchParams(location.search).has('sim');
 let session: Session | undefined;
 let currentTransport: Transport | undefined;
 
@@ -48,6 +53,7 @@ const shell = renderShell(root, {
           renderRawConsole(expertContainer, currentTransport);
           const ctx: DeviceContext = { client: session.client, transport: currentTransport };
           renderActionsPanel(expertContainer, s3Battery, ctx);
+          renderFirmwarePanel(expertContainer, session.client);
         }
       }
       expertContainer.style.display = '';
@@ -57,6 +63,12 @@ const shell = renderShell(root, {
       if (session) session.resume();
     }
   },
+  simulation: showSimulation,
 });
+
+// Landing screen: how-to + wiring when Web Serial is available, or a
+// supported-browsers message when it isn't. Simulated mode works without serial.
+const canUse = 'serial' in navigator || showSimulation;
+renderLanding(shell.content, canUse);
 
 root.append(expertContainer);

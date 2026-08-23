@@ -8,27 +8,37 @@ export interface ShellHandles { setStatus(text: string): void; content: HTMLElem
 export function renderShell(root: HTMLElement, opts: {
   onConnect(mode: 'hardware' | 'simulated', scenario: string): void;
   onExpertToggle(on: boolean): void;
+  /** Show the simulated-battery button + scenario picker (dev/preview only). */
+  simulation: boolean;
 }): ShellHandles {
   root.replaceChildren();
   const bar = document.createElement('header');
 
+  let scenario: HTMLSelectElement | undefined;
+  const getScenario = () => scenario?.value ?? 'healthy';
+
   const connect = document.createElement('button');
   connect.textContent = 'Connect (hardware)';
-  connect.onclick = () => opts.onConnect('hardware', scenario.value);
+  connect.onclick = () => opts.onConnect('hardware', getScenario());
 
-  const sim = document.createElement('button');
-  sim.textContent = 'Connect (simulated)';
-  sim.onclick = () => opts.onConnect('simulated', scenario.value);
+  const children: HTMLElement[] = [connect];
 
-  const scenarioLabel = document.createElement('label');
-  const scenario = document.createElement('select');
-  for (const s of BMS_SCENARIOS) {
-    const o = document.createElement('option');
-    o.value = s.id;
-    o.textContent = s.label;
-    scenario.appendChild(o);
+  if (opts.simulation) {
+    const sim = document.createElement('button');
+    sim.textContent = 'Connect (simulated)';
+    sim.onclick = () => opts.onConnect('simulated', getScenario());
+
+    const scenarioLabel = document.createElement('label');
+    scenario = document.createElement('select');
+    for (const s of BMS_SCENARIOS) {
+      const o = document.createElement('option');
+      o.value = s.id;
+      o.textContent = s.label;
+      scenario.appendChild(o);
+    }
+    scenarioLabel.append(document.createTextNode('Simulate: '), scenario);
+    children.push(sim, scenarioLabel);
   }
-  scenarioLabel.append(document.createTextNode('Simulate: '), scenario);
 
   const expert = document.createElement('label');
   const cb = document.createElement('input');
@@ -39,7 +49,7 @@ export function renderShell(root: HTMLElement, opts: {
   const status = document.createElement('span');
   status.textContent = 'Disconnected';
 
-  bar.append(connect, sim, scenarioLabel, expert, status);
+  bar.append(...children, expert, status);
   const content = document.createElement('main');
   root.append(bar, content);
   return { setStatus: (t) => { status.textContent = t; }, content };

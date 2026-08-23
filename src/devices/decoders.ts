@@ -23,7 +23,7 @@ export function decodeEsn(regs: Uint16Array, start: number): string {
 
 /**
  * Decode the manufacture date (registers hold bytes [_, YY, MM, DD]) and format
- * it in the runtime's locale — so a German OS shows DD.MM.YYYY and a US OS shows
+ * it in the runtime's locale - so a German OS shows DD.MM.YYYY and a US OS shows
  * MM/DD/YYYY. Pass an explicit `locale` for deterministic tests.
  */
 export function decodeDate(regs: Uint16Array, start: number, locale?: string): string {
@@ -33,9 +33,9 @@ export function decodeDate(regs: Uint16Array, start: number, locale?: string): s
     b.push((r >> 8) & 0xff, r & 0xff);
   }
   const yy = b[1] ?? 0, mm = b[2] ?? 0, dd = b[3] ?? 0; // [_, YY, MM, DD]
-  if (!yy || !mm || !dd) return '—';
+  if (!yy || !mm || !dd) return '-';
   const date = new Date(2000 + yy, mm - 1, dd);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return '-';
   return new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }
 

@@ -109,7 +109,7 @@ export function renderCells(container: HTMLElement, pack: CellPack, regs: Uint16
 
     const value = document.createElement('div');
     value.className = 'cell-value';
-    value.textContent = mv > 0 ? String(mv) : '—';
+    value.textContent = mv > 0 ? String(mv) : '-';
 
     const label = document.createElement('div');
     label.className = 'cell-label';

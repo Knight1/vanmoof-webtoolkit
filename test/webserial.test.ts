@@ -50,7 +50,7 @@ describe('WebSerialTransport', () => {
   });
 
   it('does not fire onClose on an app-initiated close()', async () => {
-    // A port whose read() hangs until cancel() rejects it — mirrors a real
+    // A port whose read() hangs until cancel() rejects it - mirrors a real
     // Web Serial reader, which only settles its pending read when cancelled.
     let rejectRead: ((e: unknown) => void) | undefined;
     const port: SerialPortLike = {

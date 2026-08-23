@@ -12,6 +12,7 @@ export const BMS_SCENARIOS = [
   { id: 'overtemp', label: 'Over-temperature' },
   { id: 'depleted', label: 'Depleted / low charge' },
   { id: 'overvoltage', label: 'Cell over-voltage' },
+  { id: 'fw-crc-error', label: 'Firmware CRC error (test)' },
 ] as const;
 export type BmsScenario = typeof BMS_SCENARIOS[number]['id'];
 
@@ -176,6 +177,9 @@ export function scenarioRegisters(id: BmsScenario): Uint16Array {
     case 'overvoltage':
       r[0x1c] = 4380;              // S2 above the high threshold
       setFlags(r, 0x02, [8]);      // OVP1
+      break;
+    case 'fw-crc-error':
+      r[0x81] = 1;                 // firmware CRC check reports failure
       break;
   }
   recomputeMinMax(r);
