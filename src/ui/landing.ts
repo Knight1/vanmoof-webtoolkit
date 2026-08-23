@@ -69,16 +69,8 @@ function renderWelcome(wrap: HTMLElement): void {
   const portCaption = document.createElement('p');
   portCaption.className = 'landing-muted';
   portCaption.textContent = 'The battery’s external port (pins):';
-  const port = document.createElement('pre');
-  port.className = 'landing-port';
-  port.textContent = [
-    ' -----------------------------',
-    ' \\ TEST | DET | TX | KEY_IN /',
-    '  \\  FAULT  |  GND  |  RX  /',
-    '   \\     CHG+  |  CHG-    /',
-    '    \\    DSG-  |  DSG+   /',
-    '     --------------------',
-  ].join('\n');
+  const port = renderPortDiagram();
+  const portLegend = renderPortLegend();
 
   const wiring = document.createElement('div');
   wiring.className = 'landing-wiring';
@@ -103,5 +95,80 @@ function renderWelcome(wrap: HTMLElement): void {
   wnote.textContent =
     '9600 baud, 8-N-1. If TEST isn’t grounded the battery stays asleep and won’t answer.';
 
-  wrap.append(h, lead, stepsTitle, steps, wiringTitle, portCaption, port, wiring, wnote);
+  wrap.append(h, lead, stepsTitle, steps, wiringTitle, portCaption, port, portLegend, wiring, wnote);
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag: string, attrs: Record<string, string | number>): SVGElement {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  return el;
+}
+
+interface Pin { label: string; cx: number; cy: number; color: string; }
+
+// Pin positions match the battery's external port: a downward-narrowing
+// connector with rows of 4, 3, 2, 2 pins. Colours group pins by function.
+const PIN_DATA = '#38bdf8';       // TX / RX
+const PIN_CONTROL = '#fbbf24';    // TEST / DET / KEY_IN / FAULT
+const PIN_GROUND = '#94a3b8';     // GND
+const PIN_CHARGE = '#34d399';     // CHG+ / CHG-
+const PIN_DISCHARGE = '#60a5fa';  // DSG+ / DSG-
+
+const PORT_PINS: Pin[] = [
+  { label: 'TEST', cx: 85, cy: 75, color: PIN_CONTROL },
+  { label: 'DET', cx: 155, cy: 75, color: PIN_CONTROL },
+  { label: 'TX', cx: 225, cy: 75, color: PIN_DATA },
+  { label: 'KEY_IN', cx: 295, cy: 75, color: PIN_CONTROL },
+  { label: 'FAULT', cx: 120, cy: 125, color: PIN_CONTROL },
+  { label: 'GND', cx: 190, cy: 125, color: PIN_GROUND },
+  { label: 'RX', cx: 260, cy: 125, color: PIN_DATA },
+  { label: 'CHG+', cx: 150, cy: 175, color: PIN_CHARGE },
+  { label: 'CHG-', cx: 230, cy: 175, color: PIN_CHARGE },
+  { label: 'DSG-', cx: 150, cy: 222, color: PIN_DISCHARGE },
+  { label: 'DSG+', cx: 230, cy: 222, color: PIN_DISCHARGE },
+];
+
+function renderPortDiagram(): SVGElement {
+  const w = 60, h = 30;
+  const svg = svgEl('svg', {
+    viewBox: '0 0 380 270',
+    class: 'port-svg',
+    role: 'img',
+    'aria-label': 'Battery external port pinout',
+  });
+  svg.appendChild(svgEl('polygon', { points: '30,30 350,30 290,250 90,250', class: 'port-housing' }));
+  for (const p of PORT_PINS) {
+    svg.appendChild(svgEl('rect', {
+      x: p.cx - w / 2, y: p.cy - h / 2, width: w, height: h, rx: 6, fill: p.color,
+    }));
+    const text = svgEl('text', {
+      x: p.cx, y: p.cy + 1, 'text-anchor': 'middle', 'dominant-baseline': 'middle', class: 'port-pin-label',
+    });
+    text.textContent = p.label;
+    svg.appendChild(text);
+  }
+  return svg;
+}
+
+function renderPortLegend(): HTMLElement {
+  const legend = document.createElement('div');
+  legend.className = 'port-legend';
+  const items: [string, string][] = [
+    [PIN_DATA, 'Data (TX/RX)'],
+    [PIN_CONTROL, 'Control / status'],
+    [PIN_GROUND, 'Ground'],
+    [PIN_CHARGE, 'Charge'],
+    [PIN_DISCHARGE, 'Discharge'],
+  ];
+  for (const [color, label] of items) {
+    const span = document.createElement('span');
+    const dot = document.createElement('i');
+    dot.className = 'dot';
+    dot.style.background = color;
+    span.append(dot, document.createTextNode(' ' + label));
+    legend.append(span);
+  }
+  return legend;
 }

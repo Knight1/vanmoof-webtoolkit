@@ -300,19 +300,18 @@ input:focus, select:focus {
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 1rem 1.4rem; margin: 0 auto;
 }
-.landing-port {
-  display: inline-block;
-  text-align: left;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.8rem 1rem;
-  margin: 0.2rem auto 1rem;
-  color: var(--accent-2);
-  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.8rem;
-  line-height: 1.35;
+.port-svg { width: 100%; max-width: 360px; height: auto; margin: 0.3rem auto 0.8rem; display: block; }
+.port-housing { fill: var(--surface-2); stroke: var(--border); stroke-width: 2; }
+.port-pin-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px; font-weight: 700; fill: #0a1020;
 }
+.port-legend {
+  display: flex; gap: 0.5rem 1rem; flex-wrap: wrap; justify-content: center;
+  margin: 0 0 0.4rem; color: var(--muted); font-size: 0.78rem;
+}
+.port-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.port-legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .wire-row { display: flex; gap: 0.6rem; align-items: center; justify-content: flex-start; }
 .wire-row .from { color: var(--text); font-weight: 600; min-width: 110px; text-align: right; }
 .wire-row .arrow { color: var(--accent-2); }
