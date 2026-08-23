@@ -37,4 +37,16 @@ describe('scenarioRegisters', () => {
     const r = scenarioRegisters('imbalanced');
     expect((r[0x29] ?? 0) - (r[0x2a] ?? 0)).toBeGreaterThan(20);
   });
+
+  it('over-temperature reports the over-temperature state word and hot sensors', () => {
+    const r = scenarioRegisters('overtemp');
+    expect(r[0x02]).toBe(0x0002); // reg-2 state word = over-temperature fault
+    expect(r[0x03] ?? 0).toBeGreaterThan(2731 + 550); // battery temp > 55 C
+  });
+
+  it('short-circuit reports a ~150 A discharge current', () => {
+    const r = scenarioRegisters('short-circuit');
+    const mA = (r[0x06]! >= 0x8000 ? r[0x06]! - 0x10000 : r[0x06]!) * 10;
+    expect(Math.abs(mA) / 1000).toBeGreaterThanOrEqual(150);
+  });
 });
